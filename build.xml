@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="name-of-project" default="build" basedir=".">
+ <target name="build"
+   depends="prepare,lint,phploc,pdepend,phpmd-ci,phpcs-ci,phpcpd,phpdox,phpunit,phpcb"/>
+
+ <target name="build-parallel"
+   depends="prepare,lint,tools-parallel,phpunit,phpcb"/>
+
+ <target name="tools-parallel" description="Run tools in parallel">
+  <parallel threadCount="2">
+   <sequential>
+    <antcall target="pdepend"/>
+    <antcall target="phpmd-ci"/>
+   </sequential>
+   <antcall target="phpcpd"/>
+   <antcall target="phpcs-ci"/>
+   <antcall target="phploc"/>
+   <antcall target="phpdox"/>
+  </parallel>
+ </target>
+
+ <target name="clean" description="Cleanup build artifacts">
+  <delete dir="${project.basedir}/build/api"/>
+  <delete dir="${project.basedir}/build/code-browser"/>
+  <delete dir="${project.basedir}/build/coverage"/>
+  <delete dir="${project.basedir}/build/logs"/>
+  <delete dir="${project.basedir}/build/pdepend"/>
+ </target>
+
+ <target name="prepare" depends="clean" description="Prepare for build">
+  <mkdir dir="${project.basedir}/build/api"/>
+  <mkdir dir="${project.basedir}/build/code-browser"/>
+  <mkdir dir="${project.basedir}/build/coverage"/>
+  <mkdir dir="${project.basedir}/build/logs"/>
+  <mkdir dir="${project.basedir}/build/pdepend"/>
+  <mkdir dir="${project.basedir}/build/phpdox"/>
+ </target>
+
+ <target name="lint" description="Perform syntax check of sourcecode files">
+  <apply executable="php" checkreturn="1">
+   <arg value="-l" />
+
+   <fileset dir="${project.basedir}/src">
+    <include name="**/*.php" />
+   </fileset>
+
+   <fileset dir="${project.basedir}/tests">
+    <include name="**/*.php" />
+   </fileset>
+  </apply>
+ </target>
+
+ <target name="phploc" description="Measure project size using PHPLOC">
+  <exec executable="${project.basedir}/vendor/bin/phploc" logoutput="true">
+   <arg value="--log-csv" />
+   <arg value="${project.basedir}/build/logs/phploc.csv" />
+   <arg path="${project.basedir}/src" />
+  </exec>
+ </target>
+
+ <target name="pdepend" description="Calculate software metrics using PHP_Depend">
+  <exec executable="${project.basedir}/vendor/bin/pdepend" logoutput="true">
+   <arg value="--jdepend-xml=${project.basedir}/build/logs/jdepend.xml" />
+   <arg value="--jdepend-chart=${project.basedir}/build/pdepend/dependencies.svg" />
+   <arg value="--overview-pyramid=${project.basedir}/build/pdepend/overview-pyramid.svg" />
+   <arg path="${project.basedir}/src" />
+  </exec>
+ </target>
+
+ <target name="phpmd"
+         description="Perform project mess detection using PHPMD and print human readable output. Intended for usage on the command line before committing.">
+  <exec executable="${project.basedir}/vendor/bin/phpmd" logoutput="true">
+   <arg path="${project.basedir}/src" />
+   <arg value="text" />
+   <arg value="${project.basedir}/phpmd.xml" />
+  </exec>
+ </target>
+
+ <target name="phpmd-ci" description="Perform project mess detection using PHPMD creating a log file for the continuous integration server">
+  <exec executable="${project.basedir}/vendor/bin/phpmd" logoutput="true">
+   <arg path="${project.basedir}/src" />
+   <arg value="xml" />
+   <arg value="${project.basedir}/phpmd.xml" />
+   <arg value="--reportfile" />
+   <arg value="${project.basedir}/build/logs/pmd.xml" />
+  </exec>
+ </target>
+
+ <target name="phpcs"
+         description="Find coding standard violations using PHP_CodeSniffer and print human readable output. Intended for usage on the command line before committing.">
+  <exec executable="${project.basedir}/vendor/bin/phpcs" logoutput="true">
+   <arg value="--standard=${project.basedir}/phpcs.xml" />
+   <arg path="${project.basedir}/src" />
+  </exec>
+ </target>
+
+ <target name="phpcs-ci" description="Find coding standard violations using PHP_CodeSniffer creating a log file for the continuous integration server">
+  <exec executable="${project.basedir}/vendor/bin/phpcs" output="/dev/null">
+   <arg value="--report=checkstyle" />
+   <arg value="--report-file=${project.basedir}/build/logs/checkstyle.xml" />
+   <arg value="--standard=${project.basedir}/build/phpcs.xml" />
+   <arg path="${project.basedir}/src" />
+  </exec>
+ </target>
+
+ <target name="phpcpd" description="Find duplicate code using PHPCPD">
+  <exec executable="${project.basedir}/vendor/bin/phpcpd">
+   <arg value="--log-pmd" />
+   <arg value="${project.basedir}/build/logs/pmd-cpd.xml" />
+   <arg path="${project.basedir}/src" />
+  </exec>
+ </target>
+
+ <target name="phpdox" description="Generate API documentation using phpDox">
+  <exec executable="${project.basedir}/vendor/bin/phpdox"/>
+ </target>
+
+ <target name="phpunit" description="Run unit tests with PHPUnit">
+  <exec executable="${project.basedir}/vendor/bin/phpunit" logoutput="true" checkreturn="1"/>
+ </target>
+
+ <target name="phpcb" description="Aggregate tool output with PHP_CodeBrowser">
+  <exec executable="${project.basedir}/vendor/bin/phpcb">
+   <arg value="--log" />
+   <arg path="${project.basedir}/build/logs" />
+   <arg value="--source" />
+   <arg path="${project.basedir}/src" />
+   <arg value="--output" />
+   <arg path="${project.basedir}/build/code-browser" />
+  </exec>
+ </target>
+ 
+ <target name="install" description="Prepare files and directories for Jenkins">
+ 	<mkdir dir="./build" />
+ 	<mkdir dir="./generatedJUnitFiles" />
+ 	
+ 	<chown file="./build" user="jenkins.jenkins" />
+ 	<chown file="./generatedJUnitFiles" user="jenkins.jenkins" />
+ </target>
+ 
+</project>
