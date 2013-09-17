@@ -99,7 +99,7 @@
   <exec executable="${project.basedir}/vendor/bin/phpcs" output="/dev/null">
    <arg value="--report=checkstyle" />
    <arg value="--report-file=${project.basedir}/build/logs/checkstyle.xml" />
-   <arg value="--standard=${project.basedir}/build/phpcs.xml" />
+   <arg value="--standard=${project.basedir}/phpcs.xml" />
    <arg path="${project.basedir}/src" />
   </exec>
  </target>
